@@ -2,4 +2,8 @@ module test
 
 go 1.14
 
-require golang.org/x/crypto v0.0.0-20200420201142-3c4aac89819a // indirect
+require (
+	github.com/faiface/beep v1.0.2
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.199
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tts v1.0.199
+)

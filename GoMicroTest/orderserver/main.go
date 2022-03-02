@@ -8,10 +8,10 @@ import (
 	"orderserver/routers"
 	"time"
 
-	"github.com/micro/go-micro/client/selector"
-	"github.com/micro/go-micro/registry"
-	"github.com/micro/go-micro/web"
 	"github.com/micro/go-plugins/registry/consul"
+	"github.com/micro/micro/v3/client/selector"
+	"github.com/micro/micro/v3/registry"
+	"github.com/micro/micro/v3/web"
 )
 
 var consulReg registry.Registry

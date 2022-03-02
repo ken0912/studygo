@@ -60,6 +60,7 @@ func (db *mongodb) InsertOne(collectionName string, doc interface{}) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	result, err := table.InsertOne(ctx, doc)
+	// fmt.Println(result)
 	if result == nil || err != nil {
 		return false
 	}

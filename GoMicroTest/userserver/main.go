@@ -3,9 +3,9 @@ package main
 import (
 	"userserver/routers"
 
-	"github.com/micro/go-micro/registry"          //注意这些地址变了
-	"github.com/micro/go-micro/web"               //注意这些地址变了
 	"github.com/micro/go-plugins/registry/consul" //注意这些地址变了
+	"github.com/micro/micro/v3/registry"          //注意这些地址变了
+	"github.com/micro/micro/v3/web"               //注意这些地址变了
 )
 
 var consulReg registry.Registry

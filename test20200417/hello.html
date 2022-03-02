@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<script>
+
+
+const speak = (msg) => {
+  let u = new SpeechSynthesisUtterance();
+  u.lang = 'zh-TW';
+  u.text = msg;
+  window.speechSynthesis.speak(u);
+};
+
+speak("收到一笔付款");
+speak("你要讀出的中文內容2");
+</script>
+<body>
+    <input type="text" id="Input" value="hello"/>
+<input type="text" id="Output"/>
+<button id="run" onclick="Run()">
+Run
+</button>
+</body>
+</html>

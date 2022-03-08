@@ -15,14 +15,15 @@ import (
 )
 
 var (
-	h    bool
-	s, S string
-	port int
-	u, U string
-	p, P string
-	d, D string
-	t    string
-	fp   string
+	h      bool
+	s, S   string
+	port   int
+	u, U   string
+	p, P   string
+	d, D   string
+	t      string
+	fp     string
+	number int
 )
 
 func init() {
@@ -38,6 +39,7 @@ func init() {
 	flag.StringVar(&d, "D", "", "database name")
 	flag.StringVar(&t, "t", "", "The table in which data needs to be inserted")
 	flag.StringVar(&fp, "fp", "", "full path of the csv file needs to be imported")
+	flag.IntVar(&number, "number", 5000, "number of per batch")
 }
 
 var rowChan = make(chan []interface{}, 1024)
@@ -70,20 +72,14 @@ func validation() {
 	}
 
 }
-func GenerateSqlInsertStr(tablename string, columnlength int) (stmt, placeholder string) {
-	stmt = `INSERT INTO ` + tablename + ` VALUES`
-	// for i := 0; i < columnlength; i++ {
-	// 	columnfmt += `?,`
-	// }
-	// columnfmt += `)`
-	// columnfmt = strings.Replace(columnfmt, ",)", ")", -1)
-
+func GenerateSqlInsertStr(tablename string, columnlength int) (sqlstr string) {
+	sqlstr = `INSERT INTO ` + tablename + ` VALUES`
 	//placeholder
 	valueslice := make([]string, columnlength)
 	for i := 0; i < columnlength; i++ {
 		valueslice[i] = "?"
 	}
-	return stmt, "(" + strings.Join(valueslice, ",") + ")"
+	return sqlstr + "(" + strings.Join(valueslice, ",") + ")"
 }
 
 //Extract data from csv file
@@ -94,6 +90,7 @@ func Extractdata() {
 	}
 	defer f.Close()
 	r := csv.NewReader(f)
+	r.LazyQuotes = true
 	id := 0
 
 	columnlen := 0
@@ -131,30 +128,51 @@ func WriteData(stop chan bool) {
 		log.Fatal("Open Connection failed:", err.Error())
 	}
 	defer db.Close()
+	//begin tran
+	tx, err := db.Begin()
+	if err != nil {
+		fmt.Println("db.Begin() err:", err)
+	}
 	//get column title
 	firstrow := <-rowChan
-	stmt, placeholder := GenerateSqlInsertStr(t, len(firstrow))
+	sqlstr := GenerateSqlInsertStr(t, len(firstrow))
+	// fmt.Println("sqlstr:", sqlstr)
 	//write data
-	// 存放 (?, ?) 的slice
-	valueStrings := make([]string, 0, 1024*2)
-	// 存放值的slice
-	valueArgs := make([]interface{}, 0, 1024*2)
+	RowAffected := 0
+	ErrorCount := 0
 	for row := range rowChan {
-		valueStrings = append(valueStrings, placeholder)
-		valueArgs = append(valueArgs, row...)
+		// _, err := DBExec(db, sqlstr, row)
+		_, err := tx.Exec(sqlstr, row...)
+		if err != nil {
+			log.Fatalln("DBExec() err:", err)
+			ErrorCount += 1
+		} else {
+			RowAffected += 1
+		}
+		// fmt.Printf("\r Row:%d", RowAffected)
 	}
-	stmt = fmt.Sprintf("%s %s", stmt, strings.Join(valueStrings, ","))
+	if ErrorCount == 0 {
+		tx.Commit()
+	} else {
+		tx.Rollback()
+	}
+	fmt.Println("")
+	fmt.Println("RowAffected:", RowAffected)
+	fmt.Println("ErrorCount:", ErrorCount)
+	stop <- true
+}
+func DBExec(db *sql.DB, stmt string, valueArgs []interface{}) (rowaffected int64, err error) {
 	r, err := db.Exec(stmt, valueArgs...)
+
 	if err != nil {
-		fmt.Println("err:", err)
+		fmt.Println("db.Exec() err:", err)
 
 	}
-	rowaffected, err := r.RowsAffected()
+	rowaffected, err = r.RowsAffected()
 	if err != nil {
 		log.Fatalln("r.RowsAffected() err:", err)
 	}
-	fmt.Println("rowaffected:", rowaffected)
-	stop <- true
+	return
 }
 func NewNullString(s string) sql.NullString {
 	if len(s) == 0 {
